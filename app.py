@@ -1,0 +1,1 @@
+print("WanderWallet setup")
