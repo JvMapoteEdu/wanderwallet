@@ -23,19 +23,84 @@ It allows users to:
 
 ## 💻 System Requirements (Mac)
 
-Before running the project, install:
+Make sure the following are installed:
 
-1. Python 3
-2. MySQL Server
-3. pip (comes with Python)
+### 1. Python 3
+
+Check:
+
+```bash
+python3 --version
+```
+
+If not installed:
+
+```bash
+brew install python
+```
+
+---
+
+### 2. MySQL Server
+
+Check:
+
+```bash
+mysql --version
+```
+
+If not installed:
+
+```bash
+brew install mysql
+brew services start mysql
+```
+
+---
+
+### 3. Git
+
+Check:
+
+```bash
+git --version
+```
+
+If not installed:
+
+```bash
+brew install git
+```
+
+---
+
+### 📦 Python Dependencies
+
+All required Python libraries (Flask, MySQL connector, etc.) are listed in `requirements.txt`.
+
+Install them using:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 📝 Notes
+
+* No need to manually install Flask or other Python libraries
+* They will be installed automatically via `requirements.txt`
+* Homebrew is recommended for easier installation:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
 ---
 
 ## 📦 Project Setup (Mac)
 
 ### 1. Clone Repository
-
-Open Terminal:
 
 ```bash
 git clone https://github.com/JvMapoteEdu/wanderwallet.git
@@ -141,7 +206,7 @@ FLUSH PRIVILEGES;
 
 ### 5. Insert Initial Data
 
-#### Add Categories
+#### Categories
 
 ```sql
 INSERT INTO categories (category_name) VALUES
@@ -152,7 +217,7 @@ INSERT INTO categories (category_name) VALUES
 ('Activities');
 ```
 
-#### Add Test User
+#### Test User
 
 ```sql
 INSERT INTO users (username, email, password, role)
@@ -167,7 +232,7 @@ VALUES ('admin', 'admin@email.com', '1234', 'user');
 python app.py
 ```
 
-Open browser:
+Open in browser:
 
 ```
 http://127.0.0.1:5000
@@ -177,10 +242,8 @@ http://127.0.0.1:5000
 
 ## 🔐 Login
 
-Use:
-
 ```
-Username: admin
+Username: admin  
 Password: 1234
 ```
 
@@ -192,14 +255,12 @@ Password: 1234
 
 * Fill in trip details
 * Click **Create Trip**
-* Popup confirms success
 
 ---
 
 ### 2. Add Expense
 
-* Select Trip (dropdown)
-* Select Category
+* Select Trip and Category
 * Enter amount, description, date
 * Click **Add Expense**
 
@@ -209,14 +270,12 @@ Password: 1234
 
 * Select expense from dropdown
 * Enter new amount
-* Click **Update Expense**
 
 ---
 
 ### 4. Delete Expense
 
 * Select expense from dropdown
-* Click **Delete Expense**
 
 ---
 
@@ -224,7 +283,6 @@ Password: 1234
 
 * Select trip
 * Enter new budget
-* Click **Update Budget**
 
 ---
 
@@ -237,8 +295,13 @@ Password: 1234
 
 ## ⚠️ Notes
 
-* Make sure MySQL is running
-* If connection fails, check credentials in `app.py`
-* This is a school project (basic UI, functional backend)
+* Ensure MySQL service is running
+* Check database credentials in `app.py` if connection fails
+* This is a school project (focus on functionality over UI)
 
 ---
+
+## 👨‍💻 Authors
+
+* Jayvee Mapote
+* Partner
