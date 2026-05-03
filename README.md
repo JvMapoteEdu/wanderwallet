@@ -1,14 +1,15 @@
-# WanderWallet (MVP)
+# WanderWallet
 
-WanderWallet is a simple web-based Travel Budget Planning and Expense Tracking System.
+WanderWallet is a web-based Travel Budget Planning and Expense Tracking System built using Flask and MySQL.
 
 It allows users to:
 
-* Create trips with a budget
-* Add expenses
-* Automatically deduct expenses from the remaining budget
-* View trips and balances
-* Generate monthly expense reports
+* Login to the system
+* Create trips with budgets
+* Add, update, and delete expenses
+* Automatically track remaining budget
+* Adjust trip budgets
+* Generate expense reports
 
 ---
 
@@ -20,9 +21,21 @@ It allows users to:
 
 ---
 
-## 📦 Project Setup
+## 💻 System Requirements (Mac)
+
+Before running the project, install:
+
+1. Python 3
+2. MySQL Server
+3. pip (comes with Python)
+
+---
+
+## 📦 Project Setup (Mac)
 
 ### 1. Clone Repository
+
+Open Terminal:
 
 ```bash
 git clone https://github.com/JvMapoteEdu/wanderwallet.git
@@ -48,12 +61,12 @@ pip install -r requirements.txt
 
 ---
 
-## 🗄 Database Setup
+## 🗄 Database Setup (MySQL)
 
-### 1. Start MySQL and open it
+### 1. Open MySQL
 
 ```bash
-sudo mysql
+mysql -u root -p
 ```
 
 ---
@@ -70,8 +83,19 @@ USE wanderwallet_db;
 ### 3. Create Tables
 
 ```sql
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100),
+    email VARCHAR(100),
+    password VARCHAR(100),
+    role VARCHAR(50),
+    created_date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 CREATE TABLE trips (
     trip_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
     trip_name VARCHAR(100),
     destination VARCHAR(100),
     start_date DATE,
@@ -87,10 +111,15 @@ CREATE TABLE budgets (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE categories (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(100)
+);
+
 CREATE TABLE expenses (
     expense_id INT AUTO_INCREMENT PRIMARY KEY,
     trip_id INT,
-    category VARCHAR(100),
+    category_id INT,
     amount DECIMAL(10,2),
     description TEXT,
     expense_date DATE,
@@ -110,16 +139,49 @@ FLUSH PRIVILEGES;
 
 ---
 
+### 5. Insert Initial Data
+
+#### Add Categories
+
+```sql
+INSERT INTO categories (category_name) VALUES
+('Food'),
+('Transport'),
+('Hotel'),
+('Shopping'),
+('Activities');
+```
+
+#### Add Test User
+
+```sql
+INSERT INTO users (username, email, password, role)
+VALUES ('admin', 'admin@email.com', '1234', 'user');
+```
+
+---
+
 ## ▶️ Run the Application
 
 ```bash
 python app.py
 ```
 
-Open in browser:
+Open browser:
 
 ```
-http://localhost:5000
+http://127.0.0.1:5000
+```
+
+---
+
+## 🔐 Login
+
+Use:
+
+```
+Username: admin
+Password: 1234
 ```
 
 ---
@@ -128,40 +190,55 @@ http://localhost:5000
 
 ### 1. Create Trip
 
-* Enter trip details and budget
+* Fill in trip details
 * Click **Create Trip**
-* A popup will confirm success
+* Popup confirms success
 
 ---
 
 ### 2. Add Expense
 
-* Enter Trip ID (from table)
-* Input category, amount, description, and date
+* Select Trip (dropdown)
+* Select Category
+* Enter amount, description, date
 * Click **Add Expense**
-* Remaining budget updates automatically
 
 ---
 
-### 3. Dashboard
+### 3. Update Expense
 
-* Displays all trips
-* Shows total and remaining budget
+* Select expense from dropdown
+* Enter new amount
+* Click **Update Expense**
 
 ---
 
-### 4. Generate Report
+### 4. Delete Expense
+
+* Select expense from dropdown
+* Click **Delete Expense**
+
+---
+
+### 5. Adjust Budget
+
+* Select trip
+* Enter new budget
+* Click **Update Budget**
+
+---
+
+### 6. Reports
 
 * Enter month and year
-* Click **Generate Report**
-* Displays total expenses for that period
+* View total expenses
 
 ---
 
 ## ⚠️ Notes
 
-* Make sure MySQL service is running
+* Make sure MySQL is running
 * If connection fails, check credentials in `app.py`
-* This is an MVP (basic UI, core features implemented)
+* This is a school project (basic UI, functional backend)
 
 ---
