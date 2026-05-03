@@ -41,6 +41,50 @@ def login():
         Password: <input type="password" name="password"><br><br>
         <button type="submit">Login</button>
     </form>
+    <br>
+    <a href="/register">Don't have an account? Register here</a>
+    '''
+
+# ---------------- REGISTER ----------------
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+
+        cursor = conn.cursor(dictionary=True)
+
+        # Check if user already exists
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+        existing = cursor.fetchone()
+
+        if existing:
+            flash("Username already exists!")
+            return redirect(url_for('register'))
+
+        # Insert new user
+        cursor.execute("""
+        INSERT INTO users (username, email, password, role)
+        VALUES (%s, %s, %s, %s)
+        """, (username, email, password, 'user'))
+
+        conn.commit()
+
+        flash("Registration successful! Please login.")
+        return redirect(url_for('login'))
+
+    return '''
+    <h2>Register</h2>
+    <form method="POST">
+        Username: <input type="text" name="username"><br><br>
+        Email: <input type="text" name="email"><br><br>
+        Password: <input type="password" name="password"><br><br>
+        <button type="submit">Register</button>
+    </form>
+
+    <br>
+    <a href="/login">Back to Login</a>
     '''
 
 # ---------------- LOGOUT ----------------
