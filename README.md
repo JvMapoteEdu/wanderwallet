@@ -300,8 +300,3 @@ Password: 1234
 * This is a school project (focus on functionality over UI)
 
 ---
-
-## 👨‍💻 Authors
-
-* Jayvee Mapote
-* Partner
