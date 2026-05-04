@@ -1,5 +1,6 @@
-from flask import Flask, request, redirect, url_for, flash, get_flashed_messages, session
+from flask import Flask, request, redirect, url_for, flash, session, render_template
 import mysql.connector
+from calendar import month_name as _month_name
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -29,21 +30,12 @@ def login():
         if user:
             session['user_id'] = user['user_id']
             session['username'] = user['username']
-            flash("Login successful!")
+            flash("Login successful!", "success")
             return redirect(url_for('home'))
         else:
-            flash("Invalid credentials")
+            flash("Invalid username or password.", "danger")
 
-    return '''
-    <h2>Login</h2>
-    <form method="POST">
-        Username: <input type="text" name="username"><br><br>
-        Password: <input type="password" name="password"><br><br>
-        <button type="submit">Login</button>
-    </form>
-    <br>
-    <a href="/register">Don't have an account? Register here</a>
-    '''
+    return render_template('login.html')
 
 # ---------------- REGISTER ----------------
 @app.route('/register', methods=['GET', 'POST'])
@@ -55,15 +47,13 @@ def register():
 
         cursor = conn.cursor(dictionary=True)
 
-        # Check if user already exists
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         existing = cursor.fetchone()
 
         if existing:
-            flash("Username already exists!")
+            flash("Username already exists!", "danger")
             return redirect(url_for('register'))
 
-        # Insert new user
         cursor.execute("""
         INSERT INTO users (username, email, password, role)
         VALUES (%s, %s, %s, %s)
@@ -71,21 +61,10 @@ def register():
 
         conn.commit()
 
-        flash("Registration successful! Please login.")
+        flash("Registration successful! Please log in.", "success")
         return redirect(url_for('login'))
 
-    return '''
-    <h2>Register</h2>
-    <form method="POST">
-        Username: <input type="text" name="username"><br><br>
-        Email: <input type="text" name="email"><br><br>
-        Password: <input type="password" name="password"><br><br>
-        <button type="submit">Register</button>
-    </form>
-
-    <br>
-    <a href="/login">Back to Login</a>
-    '''
+    return render_template('register.html')
 
 # ---------------- LOGOUT ----------------
 @app.route('/logout')
@@ -101,197 +80,46 @@ def home():
 
     cursor = conn.cursor(dictionary=True)
 
-    messages = get_flashed_messages()
-    html = ""
-
-    # POPUP MESSAGES
-    for msg in messages:
-        html += f"""
-        <script>
-            alert("{msg}");
-        </script>
-        """
-
-    # GET TRIPS
     cursor.execute("""
     SELECT t.trip_id, t.trip_name, t.destination,
+           t.start_date, t.end_date,
            b.total_budget, b.remaining_budget
     FROM trips t
     LEFT JOIN budgets b ON t.trip_id = b.trip_id
     WHERE t.user_id = %s
+    ORDER BY t.trip_id DESC
     """, (session['user_id'],))
     trips = cursor.fetchall()
 
-    # GET CATEGORIES
-    cursor.execute("SELECT * FROM categories")
+    cursor.execute("SELECT * FROM categories ORDER BY category_name")
     categories = cursor.fetchall()
 
-    # GET EXPENSES (FILTERED BY USER)
     cursor.execute("""
-    SELECT e.*
+    SELECT e.expense_id, e.amount, e.description, e.expense_date,
+           e.trip_id, t.trip_name, c.category_name
     FROM expenses e
     JOIN trips t ON e.trip_id = t.trip_id
+    JOIN categories c ON e.category_id = c.category_id
     WHERE t.user_id = %s
+    ORDER BY e.expense_date DESC, e.expense_id DESC
     """, (session['user_id'],))
     expenses = cursor.fetchall()
 
-    html += f'<p><b>Welcome, {session["username"]}</b> | <a href="/logout">Logout</a></p>'
+    total_budget    = sum(float(t['total_budget'])     for t in trips if t['total_budget'])
+    total_remaining = sum(float(t['remaining_budget']) for t in trips if t['remaining_budget'])
 
-    # CREATE TRIP
-    html += '''
-    <h2>Create Trip</h2>
-    <form method="POST" action="/add-trip">
-        Trip Name: <input type="text" name="trip_name"><br><br>
-        Destination: <input type="text" name="destination"><br><br>
-        Start Date: <input type="date" name="start_date"><br><br>
-        End Date: <input type="date" name="end_date"><br><br>
-        Budget: <input type="number" name="budget"><br><br>
-        <button type="submit">Create Trip</button>
-    </form>
+    stats = {
+        'total_trips':     len(trips),
+        'total_budget':    total_budget,
+        'total_spent':     total_budget - total_remaining,
+        'total_remaining': total_remaining,
+    }
 
-    <hr>
-
-    <h2>Add Expense</h2>
-    <form method="POST" action="/add-expense">
-
-        Trip:
-        <select name="trip_id">
-    '''
-
-    for trip in trips:
-        html += f'<option value="{trip["trip_id"]}">{trip["trip_name"]} - {trip["destination"]}</option>'
-
-    html += '''
-        </select><br><br>
-
-        Category:
-        <select name="category_id">
-    '''
-
-    for cat in categories:
-        html += f'<option value="{cat["category_id"]}">{cat["category_name"]}</option>'
-
-    html += '''
-        </select><br><br>
-
-        Amount: <input type="number" name="amount"><br><br>
-        Description: <input type="text" name="description"><br><br>
-        Date: <input type="date" name="expense_date"><br><br>
-        <button type="submit">Add Expense</button>
-    </form>
-
-    <hr>
-
-    <h2>Trips Overview</h2>
-    <table border="1">
-        <tr>
-            <th>Name</th>
-            <th>Destination</th>
-            <th>Total Budget</th>
-            <th>Remaining</th>
-        </tr>
-    '''
-
-    for trip in trips:
-        html += f"""
-        <tr>
-            <td>{trip['trip_name']}</td>
-            <td>{trip['destination']}</td>
-            <td>₱{float(trip['total_budget']):,.2f}</td>
-            <td>₱{float(trip['remaining_budget']):,.2f}</td>
-        </tr>
-        """
-
-    html += "</table>"
-
-    # REPORTS SECTION
-    html += '''
-    <hr>
-
-    <h2>Reports</h2>
-
-    <form method="POST" action="/report">
-        Month: <input type="number" name="month"><br><br>
-        Year: <input type="number" name="year"><br><br>
-        <button type="submit">Total Expense</button>
-    </form>
-
-    <br>
-
-    <form method="POST" action="/report-budget">
-        <button type="submit">Budget vs Actual</button>
-    </form>
-
-    <form method="POST" action="/report-category">
-        <button type="submit">Expense by Category</button>
-    </form>
-
-    <form method="POST" action="/report-remaining">
-        <button type="submit">Remaining Budget</button>
-    </form>
-
-    <form method="POST" action="/report-user">
-        <button type="submit">User Spending</button>
-    </form>
-    '''
-
-    # DELETE EXPENSE
-    html += '''
-    <hr>
-    <h2>Delete Expense</h2>
-    <form method="POST" action="/delete-expense">
-        Expense:
-        <select name="expense_id">
-    '''
-
-    for e in expenses:
-        html += f'<option value="{e["expense_id"]}">{e["description"]} (₱{float(e["amount"]):,.2f})</option>'
-
-    html += '''
-        </select><br><br>
-        <button type="submit">Delete Expense</button>
-    </form>
-    '''
-
-    # UPDATE EXPENSE
-    html += '''
-    <hr>
-    <h2>Update Expense</h2>
-    <form method="POST" action="/update-expense">
-        Expense:
-        <select name="expense_id">
-    '''
-
-    for e in expenses:
-        html += f'<option value="{e["expense_id"]}">{e["description"]} (₱{float(e["amount"]):,.2f})</option>'
-
-    html += '''
-        </select><br><br>
-        New Amount: <input type="number" name="amount"><br><br>
-        <button type="submit">Update Expense</button>
-    </form>
-    '''
-
-    # ADJUST BUDGET
-    html += '''
-    <hr>
-    <h2>Adjust Budget</h2>
-    <form method="POST" action="/adjust-budget">
-        Trip:
-        <select name="trip_id">
-    '''
-
-    for trip in trips:
-        html += f'<option value="{trip["trip_id"]}">{trip["trip_name"]} (₱{float(trip["remaining_budget"]):,.2f})</option>'
-
-    html += '''
-        </select><br><br>
-        New Budget: <input type="number" name="new_budget"><br><br>
-        <button type="submit">Update Budget</button>
-    </form>
-    '''
-
-    return html
+    return render_template('home.html',
+                           trips=trips,
+                           categories=categories,
+                           expenses=expenses,
+                           stats=stats)
 
 # ---------------- ADD TRIP ----------------
 @app.route('/add-trip', methods=['POST'])
@@ -299,15 +127,14 @@ def add_trip():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    trip_name = request.form['trip_name']
+    trip_name   = request.form['trip_name']
     destination = request.form['destination']
-    start_date = request.form['start_date']
-    end_date = request.form['end_date']
-    budget = request.form['budget']
+    start_date  = request.form['start_date']
+    end_date    = request.form['end_date']
+    budget      = request.form['budget']
 
     cursor = conn.cursor()
 
-    # 🔥 USE SESSION USER
     cursor.execute("""
     INSERT INTO trips (user_id, trip_name, destination, start_date, end_date)
     VALUES (%s, %s, %s, %s, %s)
@@ -322,7 +149,7 @@ def add_trip():
 
     conn.commit()
 
-    flash("Trip created successfully!")
+    flash("Trip created successfully!", "success")
     return redirect(url_for('home'))
 
 # ---------------- ADD EXPENSE ----------------
@@ -331,10 +158,10 @@ def add_expense():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    trip_id = request.form['trip_id']
-    category_id = request.form['category_id']
-    amount = float(request.form['amount'])
-    description = request.form['description']
+    trip_id      = request.form['trip_id']
+    category_id  = request.form['category_id']
+    amount       = float(request.form['amount'])
+    description  = request.form['description']
     expense_date = request.form['expense_date']
 
     cursor = conn.cursor()
@@ -352,9 +179,8 @@ def add_expense():
 
     conn.commit()
 
-    flash("Expense added successfully!")
+    flash("Expense added successfully!", "success")
     return redirect(url_for('home'))
-
 
 # ---------------- DELETE EXPENSE ----------------
 @app.route('/delete-expense', methods=['POST'])
@@ -370,27 +196,24 @@ def delete_expense():
     expense = cursor.fetchone()
 
     if not expense:
-        flash("Expense not found")
+        flash("Expense not found.", "warning")
         return redirect(url_for('home'))
 
     trip_id = expense['trip_id']
-    amount = expense['amount']
+    amount  = expense['amount']
 
-    # Restore budget
     cursor.execute("""
     UPDATE budgets
     SET remaining_budget = remaining_budget + %s
     WHERE trip_id = %s
     """, (amount, trip_id))
 
-    # Delete expense
     cursor.execute("DELETE FROM expenses WHERE expense_id = %s", (expense_id,))
 
     conn.commit()
 
-    flash("Expense deleted and budget restored!")
+    flash("Expense deleted and budget restored.", "success")
     return redirect(url_for('home'))
-
 
 # ---------------- UPDATE EXPENSE ----------------
 @app.route('/update-expense', methods=['POST'])
@@ -407,20 +230,18 @@ def update_expense():
     expense = cursor.fetchone()
 
     if not expense:
-        flash("Expense not found")
+        flash("Expense not found.", "warning")
         return redirect(url_for('home'))
 
     old_amount = float(expense['amount'])
-    trip_id = expense['trip_id']
+    trip_id    = expense['trip_id']
 
-    # Update expense
     cursor.execute("""
     UPDATE expenses
     SET amount = %s
     WHERE expense_id = %s
     """, (new_amount, expense_id))
 
-    # Adjust budget
     difference = new_amount - old_amount
 
     cursor.execute("""
@@ -431,9 +252,8 @@ def update_expense():
 
     conn.commit()
 
-    flash("Expense updated successfully!")
+    flash("Expense updated successfully!", "success")
     return redirect(url_for('home'))
-
 
 # ---------------- ADJUST BUDGET ----------------
 @app.route('/adjust-budget', methods=['POST'])
@@ -441,7 +261,7 @@ def adjust_budget():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    trip_id = request.form['trip_id']
+    trip_id    = request.form['trip_id']
     new_budget = float(request.form['new_budget'])
 
     cursor = conn.cursor(dictionary=True)
@@ -450,13 +270,10 @@ def adjust_budget():
     budget = cursor.fetchone()
 
     if not budget:
-        flash("Budget not found")
+        flash("Budget not found.", "warning")
         return redirect(url_for('home'))
 
-    total_budget = float(budget['total_budget'])
-    remaining_budget = float(budget['remaining_budget'])
-
-    spent = total_budget - remaining_budget
+    spent         = float(budget['total_budget']) - float(budget['remaining_budget'])
     new_remaining = new_budget - spent
 
     cursor.execute("""
@@ -467,35 +284,37 @@ def adjust_budget():
 
     conn.commit()
 
-    flash("Budget updated successfully!")
+    flash("Budget updated successfully!", "success")
     return redirect(url_for('home'))
 
-# ---------------- REPORT ----------------
+# ---------------- REPORT: MONTHLY TOTAL ----------------
 @app.route('/report', methods=['POST'])
 def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
     month = request.form['month']
-    year = request.form['year']
+    year  = request.form['year']
 
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-    SELECT SUM(amount) as total_expense
-    FROM expenses
-    WHERE MONTH(expense_date) = %s
-    AND YEAR(expense_date) = %s
-    """, (month, year))
+    SELECT SUM(e.amount) AS total_expense
+    FROM expenses e
+    JOIN trips t ON e.trip_id = t.trip_id
+    WHERE t.user_id = %s
+      AND MONTH(e.expense_date) = %s
+      AND YEAR(e.expense_date)  = %s
+    """, (session['user_id'], month, year))
 
     result = cursor.fetchone()
-    total = result['total_expense'] if result['total_expense'] else 0
+    total  = result['total_expense'] if result['total_expense'] else 0
 
-    return f"""
-    <h2>Report Result</h2>
-    <p>Total Expenses for {month}/{year}: <b>{total}</b></p>
-    <a href="/">Back</a>
-    """
+    return render_template('report_monthly.html',
+                           total=total,
+                           month=month,
+                           month_name=_month_name[int(month)],
+                           year=year)
 
 # ---------------- REPORT: BUDGET VS ACTUAL ----------------
 @app.route('/report-budget', methods=['POST'])
@@ -517,14 +336,7 @@ def report_budget():
 
     data = cursor.fetchall()
 
-    html = "<h2>Budget vs Actual</h2><table border='1'>"
-    html += "<tr><th>Trip</th><th>Total</th><th>Spent</th><th>Remaining</th></tr>"
-
-    for row in data:
-        html += f"<tr><td>{row['trip_name']}</td><td>₱{float(row['total_budget']):,.2f}</td><td>₱{float(row['spent']):,.2f}</td><td>₱{float(row['remaining_budget']):,.2f}</td></tr>"
-
-    html += "</table><br><a href='/'>Back</a>"
-    return html
+    return render_template('report_budget.html', data=data)
 
 # ---------------- REPORT: EXPENSE BY CATEGORY ----------------
 @app.route('/report-category', methods=['POST'])
@@ -541,18 +353,12 @@ def report_category():
     JOIN trips t ON e.trip_id = t.trip_id
     WHERE t.user_id = %s
     GROUP BY c.category_name
+    ORDER BY total DESC
     """, (session['user_id'],))
 
     data = cursor.fetchall()
 
-    html = "<h2>Expense by Category</h2><table border='1'>"
-    html += "<tr><th>Category</th><th>Total</th></tr>"
-
-    for row in data:
-        html += f"<tr><td>{row['category_name']}</td><td>₱{float(row['total']):,.2f}</td></tr>"
-
-    html += "</table><br><a href='/'>Back</a>"
-    return html
+    return render_template('report_category.html', data=data)
 
 # ---------------- REPORT: REMAINING BUDGET ----------------
 @app.route('/report-remaining', methods=['POST'])
@@ -563,22 +369,16 @@ def report_remaining():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-    SELECT t.trip_name, b.remaining_budget
+    SELECT t.trip_name, b.remaining_budget, b.total_budget
     FROM budgets b
     JOIN trips t ON b.trip_id = t.trip_id
     WHERE t.user_id = %s
+    ORDER BY b.remaining_budget ASC
     """, (session['user_id'],))
 
     data = cursor.fetchall()
 
-    html = "<h2>Remaining Budget per Trip</h2><table border='1'>"
-    html += "<tr><th>Trip</th><th>Remaining</th></tr>"
-
-    for row in data:
-        html += f"<tr><td>{row['trip_name']}</td><td>₱{float(row['remaining_budget']):,.2f}</td></tr>"
-
-    html += "</table><br><a href='/'>Back</a>"
-    return html
+    return render_template('report_remaining.html', data=data)
 
 # ---------------- REPORT: USER SPENDING ----------------
 @app.route('/report-user', methods=['POST'])
@@ -594,17 +394,14 @@ def report_user():
     JOIN trips t ON u.user_id = t.user_id
     JOIN expenses e ON t.trip_id = e.trip_id
     WHERE u.user_id = %s
+    GROUP BY u.username
     """, (session['user_id'],))
 
-    row = cursor.fetchone()
+    row   = cursor.fetchone()
+    total = float(row['total_spent']) if row and row['total_spent'] else 0
+    uname = row['username'] if row else session['username']
 
-    total = row['total_spent'] if row['total_spent'] else 0
-
-    return f"""
-    <h2>User Spending</h2>
-    <p>Total Spent by {row['username']}: <b>₱{float(total):,.2f}</b></p>
-    <a href="/">Back</a>
-    """
+    return render_template('report_user.html', total=total, username=uname)
 
 if __name__ == '__main__':
     app.run(debug=True)
