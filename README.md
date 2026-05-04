@@ -180,7 +180,6 @@ CREATE TABLE budgets (
     budget_id INT AUTO_INCREMENT PRIMARY KEY,
     trip_id INT UNIQUE,
     total_budget DECIMAL(10,2),
-    remaining_budget DECIMAL(10,2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -32,15 +32,15 @@ INSERT INTO trips (user_id, trip_name, destination, start_date, end_date) VALUES
 -- ================================
 -- BUDGETS
 -- ================================
-INSERT INTO budgets (trip_id, total_budget, remaining_budget) VALUES
-(1, 50000, 50000),
-(2, 30000, 30000),
-(3, 40000, 40000),
-(4, 35000, 35000),
-(5, 25000, 25000),
-(6, 30000, 30000),
-(7, 28000, 28000),
-(8, 20000, 20000);
+INSERT INTO budgets (trip_id, total_budget) VALUES
+(1, 50000),
+(2, 30000),
+(3, 40000),
+(4, 35000),
+(5, 25000),
+(6, 30000),
+(7, 28000),
+(8, 20000);
 
 -- ================================
 -- EXPENSES
@@ -189,12 +189,3 @@ INSERT INTO expenses (trip_id, category_id, amount, description, expense_date) V
 (8, 5,  300, 'Camp John Hay Walk',       '2026-12-23'),
 (8, 1,  500, 'Strawberry Pandesal Breakfast','2026-12-23');
 
--- ================================
--- UPDATE REMAINING BUDGET
--- ================================
-UPDATE budgets b
-SET remaining_budget = total_budget - (
-    SELECT IFNULL(SUM(e.amount), 0)
-    FROM expenses e
-    WHERE e.trip_id = b.trip_id
-);
