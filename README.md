@@ -157,11 +157,11 @@ USE wanderwallet_db;
 
 ```sql
 CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(100),
-    email VARCHAR(100),
-    password VARCHAR(100),
-    role VARCHAR(50),
+    user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
     created_date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

@@ -4,9 +4,9 @@ USE wanderwallet_db;
 -- ADD USERS (admin already exists)
 -- ================================
 INSERT INTO users (username, email, password, role) VALUES
-('user1', 'user1@email.com', '1234', 'user'),
-('user2', 'user2@email.com', '1234', 'user'),
-('user3', 'user3@email.com', '1234', 'user');
+('user1', 'user1@email.com', 'scrypt:32768:8:1$SifkgrjLSWZKzz5m$ce03da354c73fe2ef7105b858107ad704a2b26776fae5a7f60b649f73ebc96edfcf10bb9d3f2ed155666d548398ff2aa93f615bfcd24e53650190ace8ccc39db', 'user'),
+('user2', 'user2@email.com', 'scrypt:32768:8:1$SifkgrjLSWZKzz5m$ce03da354c73fe2ef7105b858107ad704a2b26776fae5a7f60b649f73ebc96edfcf10bb9d3f2ed155666d548398ff2aa93f615bfcd24e53650190ace8ccc39db', 'user'),
+('user3', 'user3@email.com', 'scrypt:32768:8:1$SifkgrjLSWZKzz5m$ce03da354c73fe2ef7105b858107ad704a2b26776fae5a7f60b649f73ebc96edfcf10bb9d3f2ed155666d548398ff2aa93f615bfcd24e53650190ace8ccc39db', 'user');
 
 -- ================================
 -- TRIPS PER USER

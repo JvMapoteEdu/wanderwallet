@@ -1,6 +1,7 @@
 from flask import Flask, request, redirect, url_for, flash, session, render_template, jsonify
 import mysql.connector
 from calendar import month_name as _month_name
+from werkzeug.security import generate_password_hash, check_password_hash
 import requests as http_requests
 import json
 import os
@@ -26,14 +27,11 @@ def login():
         password = request.form['password']
 
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("""
-        SELECT * FROM users
-        WHERE username = %s AND password = %s
-        """, (username, password))
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
 
         user = cursor.fetchone()
 
-        if user:
+        if user and check_password_hash(user['password'], password):
             session['user_id'] = user['user_id']
             session['username'] = user['username']
             flash("Login successful!", "success")
@@ -63,7 +61,7 @@ def register():
         cursor.execute("""
         INSERT INTO users (username, email, password, role)
         VALUES (%s, %s, %s, %s)
-        """, (username, email, password, 'user'))
+        """, (username, email, generate_password_hash(password), 'user'))
 
         conn.commit()
 
