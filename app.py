@@ -293,6 +293,76 @@ def adjust_budget():
     flash("Budget updated successfully!", "success")
     return redirect(url_for('home'))
 
+# ---------------- EDIT TRIP ----------------
+@app.route('/edit-trip', methods=['POST'])
+def edit_trip():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    trip_id     = request.form['trip_id']
+    trip_name   = request.form['trip_name']
+    destination = request.form['destination']
+    start_date  = request.form['start_date']
+    end_date    = request.form['end_date']
+    new_budget  = float(request.form['budget'])
+
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM budgets WHERE trip_id = %s", (trip_id,))
+    budget = cursor.fetchone()
+
+    cursor.execute("""
+    UPDATE trips
+    SET trip_name = %s, destination = %s, start_date = %s, end_date = %s
+    WHERE trip_id = %s AND user_id = %s
+    """, (trip_name, destination, start_date, end_date, trip_id, session['user_id']))
+
+    if budget:
+        spent         = float(budget['total_budget']) - float(budget['remaining_budget'])
+        new_remaining = new_budget - spent
+        cursor.execute("""
+        UPDATE budgets
+        SET total_budget = %s, remaining_budget = %s
+        WHERE trip_id = %s
+        """, (new_budget, new_remaining, trip_id))
+    else:
+        cursor.execute("""
+        INSERT INTO budgets (trip_id, total_budget, remaining_budget)
+        VALUES (%s, %s, %s)
+        """, (trip_id, new_budget, new_budget))
+
+    conn.commit()
+
+    flash("Trip updated successfully!", "success")
+    return redirect(url_for('home'))
+
+# ---------------- DELETE TRIP ----------------
+@app.route('/delete-trip', methods=['POST'])
+def delete_trip():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    trip_id = request.form['trip_id']
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    DELETE FROM expenses WHERE trip_id = %s
+    """, (trip_id,))
+
+    cursor.execute("""
+    DELETE FROM budgets WHERE trip_id = %s
+    """, (trip_id,))
+
+    cursor.execute("""
+    DELETE FROM trips WHERE trip_id = %s AND user_id = %s
+    """, (trip_id, session['user_id']))
+
+    conn.commit()
+
+    flash("Trip deleted successfully.", "success")
+    return redirect(url_for('home'))
+
 # ---------------- REPORT: MONTHLY TOTAL ----------------
 @app.route('/report', methods=['POST'])
 def report():

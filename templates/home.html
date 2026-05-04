@@ -167,6 +167,7 @@
                         <th>Spent</th>
                         <th>Remaining</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -208,6 +209,26 @@
                             {% else %}
                                 <span class="badge bg-success-subtle text-success border border-success-subtle">Good</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-warning me-1"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editTripModal"
+                                    data-trip-id="{{ trip.trip_id }}"
+                                    data-trip-name="{{ trip.trip_name }}"
+                                    data-trip-destination="{{ trip.destination }}"
+                                    data-trip-start="{{ trip.start_date.strftime('%Y-%m-%d') if trip.start_date and trip.start_date is not string else trip.start_date or '' }}"
+                                    data-trip-end="{{ trip.end_date.strftime('%Y-%m-%d') if trip.end_date and trip.end_date is not string else trip.end_date or '' }}"
+                                    data-trip-budget="{{ total }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="POST" action="/delete-trip" class="d-inline"
+                                  onsubmit="return confirm('Delete this trip and all its expenses?');">
+                                <input type="hidden" name="trip_id" value="{{ trip.trip_id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -562,6 +583,63 @@
 
 </div>{# end tab-content #}
 
+{# ======== Edit Trip Modal ======== #}
+<div class="modal fade" id="editTripModal" tabindex="-1" aria-labelledby="editTripModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content ww-card">
+            <div class="modal-header border-bottom" style="border-color: var(--ww-border) !important;">
+                <h6 class="modal-title fw-bold" id="editTripModalLabel">
+                    <i class="bi bi-pencil-fill text-warning me-2"></i>Edit Trip
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/edit-trip">
+                <div class="modal-body">
+                    <input type="hidden" name="trip_id" id="edit-trip-id">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Trip Name</label>
+                            <input type="text" name="trip_name" id="edit-trip-name"
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Destination</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                <input type="text" name="destination" id="edit-trip-destination"
+                                       class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" name="start_date" id="edit-trip-start"
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date</label>
+                            <input type="date" name="end_date" id="edit-trip-end"
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Total Budget (₱)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" name="budget" id="edit-trip-budget"
+                                       class="form-control" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top" style="border-color: var(--ww-border) !important;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-warning px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {# ======== Update Expense Modal ======== #}
 <div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-sm">
@@ -599,6 +677,16 @@
 
 {% block scripts %}
 <script>
+    document.getElementById('editTripModal').addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('edit-trip-id').value          = btn.dataset.tripId;
+        document.getElementById('edit-trip-name').value        = btn.dataset.tripName;
+        document.getElementById('edit-trip-destination').value = btn.dataset.tripDestination;
+        document.getElementById('edit-trip-start').value       = btn.dataset.tripStart;
+        document.getElementById('edit-trip-end').value         = btn.dataset.tripEnd;
+        document.getElementById('edit-trip-budget').value      = btn.dataset.tripBudget;
+    });
+
     document.getElementById('updateModal').addEventListener('show.bs.modal', function (e) {
         const btn = e.relatedTarget;
         document.getElementById('update-expense-id').value  = btn.dataset.expenseId;
