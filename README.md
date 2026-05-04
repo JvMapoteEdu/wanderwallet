@@ -2,6 +2,9 @@
 
 WanderWallet is a web-based Travel Budget Planning and Expense Tracking System built with Flask and MySQL.
 
+### Demo
+https://www.youtube.com/watch?v=QFHttMHAw5E
+
 ### Features
 
 - Register and log in to a personal account
