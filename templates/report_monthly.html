@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Monthly Report – WanderWallet{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <a href="/" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h5 class="mb-0 fw-bold">Monthly Expense Report</h5>
+        </div>
+
+        <div class="card ww-card report-result-card shadow-sm">
+            <div class="card-body p-4 text-center">
+                <div class="ww-stat-icon blue mx-auto mb-3" style="width:56px;height:56px;font-size:1.5rem;">
+                    <i class="bi bi-calendar3"></i>
+                </div>
+                <p class="text-muted mb-1">Total Expenses for</p>
+                <h4 class="fw-bold mb-3">
+                    {{ month_name }} {{ year }}
+                </h4>
+                <div class="display-6 fw-bold text-primary">
+                    ₱{{ "{:,.2f}".format(total|float) }}
+                </div>
+                {% if total == 0 %}
+                <p class="text-muted mt-3 mb-0 small">No expenses recorded for this period.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="/?tab=reports" class="ww-link">
+                <i class="bi bi-arrow-left me-1"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

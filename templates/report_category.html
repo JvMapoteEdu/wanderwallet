@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Expense by Category – WanderWallet{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="/" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h5 class="mb-0 fw-bold">Expense by Category</h5>
+</div>
+
+{% if data %}
+{% set grand_total = data | sum(attribute='total') | float %}
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card ww-card shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-pie-chart-fill text-primary"></i>
+                <h6>Category Breakdown</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table ww-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Share</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data | sort(attribute='total', reverse=True) %}
+                        {% set pct = ((row.total|float / grand_total) * 100)|round(1) if grand_total > 0 else 0 %}
+                        <tr>
+                            <td class="fw-medium">{{ row.category_name }}</td>
+                            <td>₱{{ "{:,.2f}".format(row.total|float) }}</td>
+                            <td style="min-width: 120px;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="budget-bar flex-grow-1">
+                                        <div class="budget-bar-fill bg-primary" style="width: {{ pct }}%;"></div>
+                                    </div>
+                                    <small class="text-muted" style="width:40px;">{{ pct }}%</small>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <td class="fw-bold">Total</td>
+                            <td class="fw-bold">₱{{ "{:,.2f}".format(grand_total) }}</td>
+                            <td class="text-muted small">100%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card ww-card shadow-sm h-100">
+            <div class="card-header">
+                <i class="bi bi-bar-chart-fill text-primary"></i>
+                <h6>Visual Overview</h6>
+            </div>
+            <div class="card-body">
+                {% for row in data | sort(attribute='total', reverse=True) %}
+                {% set pct = ((row.total|float / grand_total) * 100)|round(1) if grand_total > 0 else 0 %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-medium">{{ row.category_name }}</span>
+                        <span class="small text-muted">₱{{ "{:,.2f}".format(row.total|float) }}</span>
+                    </div>
+                    <div class="progress" style="height:10px;border-radius:5px;">
+                        <div class="progress-bar bg-primary" style="width: {{ pct }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="ww-empty">
+    <i class="bi bi-pie-chart"></i>
+    <p class="mb-0 fw-medium">No expense data yet</p>
+    <small>Add expenses to see the category breakdown.</small>
+</div>
+{% endif %}
+
+<div class="mt-3">
+    <a href="/" class="ww-link"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
+</div>
+{% endblock %}

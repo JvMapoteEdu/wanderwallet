@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}User Spending – WanderWallet{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <a href="/" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h5 class="mb-0 fw-bold">User Spending Summary</h5>
+        </div>
+
+        <div class="card ww-card report-result-card shadow-sm">
+            <div class="card-body p-4 text-center">
+                <div class="ww-stat-icon red mx-auto mb-3" style="width:56px;height:56px;font-size:1.5rem;">
+                    <i class="bi bi-person-fill-check"></i>
+                </div>
+                <p class="text-muted mb-1">Total spent by</p>
+                <h4 class="fw-bold mb-3">{{ username }}</h4>
+                <div class="display-6 fw-bold text-danger">
+                    ₱{{ "{:,.2f}".format(total|float) }}
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                    across all trips
+                </p>
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="/" class="ww-link">
+                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

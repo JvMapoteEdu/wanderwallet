@@ -1,0 +1,365 @@
+/* ============================
+   WanderWallet – Custom Styles
+   ============================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --ww-primary:      #1d4ed8;
+    --ww-primary-dark: #1e40af;
+    --ww-secondary:    #0ea5e9;
+    --ww-accent:       #f59e0b;
+    --ww-success:      #10b981;
+    --ww-danger:       #ef4444;
+    --ww-warning:      #f59e0b;
+    --ww-bg:           #f1f5f9;
+    --ww-text:         #1e293b;
+    --ww-muted:        #64748b;
+    --ww-border:       #e2e8f0;
+    --ww-radius:       12px;
+    --ww-radius-sm:    8px;
+}
+
+/* ---- Base ---- */
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--ww-bg);
+    color: var(--ww-text);
+    font-size: 0.9375rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Navbar ---- */
+.ww-navbar {
+    background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%);
+    box-shadow: 0 2px 12px rgba(29, 78, 216, 0.25);
+    padding: 0.75rem 0;
+}
+
+.ww-navbar .navbar-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #fff !important;
+    letter-spacing: -0.4px;
+}
+
+.ww-navbar .navbar-brand i {
+    margin-right: 6px;
+}
+
+/* ---- Cards ---- */
+.ww-card {
+    border: none;
+    border-radius: var(--ww-radius);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    background: #fff;
+}
+
+.ww-card .card-header {
+    background: #fff;
+    border-bottom: 1px solid var(--ww-border);
+    border-radius: var(--ww-radius) var(--ww-radius) 0 0 !important;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ww-card .card-header h5,
+.ww-card .card-header h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* ---- Stat Cards ---- */
+.ww-stat {
+    background: #fff;
+    border-radius: var(--ww-radius);
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    border-left: 4px solid var(--ww-primary);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.ww-stat.stat-budget  { border-left-color: #8b5cf6; }
+.ww-stat.stat-spent   { border-left-color: var(--ww-danger); }
+.ww-stat.stat-left    { border-left-color: var(--ww-success); }
+
+.ww-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.ww-stat-icon.blue   { background: #dbeafe; color: var(--ww-primary); }
+.ww-stat-icon.purple { background: #ede9fe; color: #8b5cf6; }
+.ww-stat-icon.red    { background: #fee2e2; color: var(--ww-danger); }
+.ww-stat-icon.green  { background: #d1fae5; color: var(--ww-success); }
+
+.ww-stat-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.ww-stat-label {
+    font-size: 0.78rem;
+    color: var(--ww-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ---- Buttons ---- */
+.btn-ww {
+    background: linear-gradient(135deg, var(--ww-primary), var(--ww-secondary));
+    border: none;
+    color: #fff;
+    font-weight: 500;
+    border-radius: var(--ww-radius-sm);
+    transition: all 0.2s ease;
+}
+
+.btn-ww:hover {
+    background: linear-gradient(135deg, var(--ww-primary-dark), #0284c7);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(29, 78, 216, 0.3);
+}
+
+.btn-ww:active { transform: translateY(0); }
+
+/* ---- Nav Tabs ---- */
+.ww-tabs {
+    border-bottom: 2px solid var(--ww-border);
+    gap: 4px;
+}
+
+.ww-tabs .nav-link {
+    color: var(--ww-muted);
+    border: none;
+    border-radius: var(--ww-radius-sm) var(--ww-radius-sm) 0 0;
+    padding: 0.55rem 1.1rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+}
+
+.ww-tabs .nav-link:hover:not(.active) {
+    color: var(--ww-primary);
+    background: rgba(29, 78, 216, 0.06);
+}
+
+.ww-tabs .nav-link.active {
+    color: var(--ww-primary);
+    background: #fff;
+    font-weight: 600;
+    border-bottom: 2px solid var(--ww-primary);
+    margin-bottom: -2px;
+}
+
+.ww-tabs .nav-link i {
+    margin-right: 5px;
+}
+
+/* ---- Tables ---- */
+.ww-table {
+    font-size: 0.875rem;
+}
+
+.ww-table thead th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: var(--ww-muted);
+    border-bottom: 2px solid var(--ww-border);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    padding: 0.65rem 0.75rem;
+    white-space: nowrap;
+}
+
+.ww-table tbody td {
+    padding: 0.65rem 0.75rem;
+    vertical-align: middle;
+    border-color: var(--ww-border);
+}
+
+.ww-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* ---- Budget Progress ---- */
+.budget-bar {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #e2e8f0;
+    margin-top: 4px;
+}
+
+.budget-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* ---- Auth Pages ---- */
+.auth-wrapper {
+    min-height: calc(100vh - 4rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+}
+
+.auth-logo {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, var(--ww-primary), var(--ww-secondary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.75rem;
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(29, 78, 216, 0.35);
+}
+
+/* ---- Form Controls ---- */
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 4px;
+}
+
+.form-control,
+.form-select {
+    border-color: var(--ww-border);
+    border-radius: var(--ww-radius-sm);
+    font-size: 0.9rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--ww-primary);
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+
+.input-group-text {
+    background: #f8fafc;
+    border-color: var(--ww-border);
+    color: var(--ww-muted);
+}
+
+.input-group .form-control {
+    border-left: 0;
+}
+
+/* ---- Empty State ---- */
+.ww-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--ww-muted);
+}
+
+.ww-empty i {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    opacity: 0.4;
+}
+
+/* ---- Reports ---- */
+.report-btn-card {
+    border: 1px solid var(--ww-border);
+    border-radius: var(--ww-radius);
+    padding: 1.25rem;
+    background: #fff;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.report-btn-card:hover {
+    border-color: var(--ww-primary);
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.12);
+    transform: translateY(-2px);
+}
+
+.report-result-card {
+    border-left: 4px solid var(--ww-accent);
+}
+
+/* ---- Links ---- */
+.ww-link {
+    color: var(--ww-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.ww-link:hover {
+    color: var(--ww-primary-dark);
+    text-decoration: underline;
+}
+
+/* ---- Footer ---- */
+.ww-footer {
+    background: #1e293b;
+    color: #94a3b8;
+    padding: 1rem 0;
+    margin-top: auto;
+    font-size: 0.85rem;
+}
+
+/* ---- Alerts ---- */
+.alert {
+    border-radius: var(--ww-radius-sm);
+    border: none;
+    font-size: 0.9rem;
+}
+
+/* ---- Badges ---- */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+/* ---- Section divider ---- */
+.section-divider {
+    height: 1px;
+    background: var(--ww-border);
+    margin: 1.5rem 0;
+}
+
+/* ---- Responsive tweaks ---- */
+@media (max-width: 576px) {
+    .ww-stat {
+        padding: 1rem;
+    }
+
+    .ww-stat-value {
+        font-size: 1.1rem;
+    }
+
+    .ww-tabs .nav-link {
+        padding: 0.45rem 0.7rem;
+        font-size: 0.82rem;
+    }
+}
