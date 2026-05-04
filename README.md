@@ -76,7 +76,7 @@ brew install git
 
 ### 📦 Python Dependencies
 
-All required Python libraries (Flask, MySQL connector, etc.) are listed in `requirements.txt`.
+All required Python libraries are listed in `requirements.txt`.
 
 Install them using:
 
@@ -90,7 +90,7 @@ pip install -r requirements.txt
 
 * No need to manually install Flask or other Python libraries
 * They will be installed automatically via `requirements.txt`
-* Homebrew is recommended for easier installation:
+* Homebrew is recommended:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -204,28 +204,6 @@ FLUSH PRIVILEGES;
 
 ---
 
-### 5. Insert Initial Data
-
-#### Categories
-
-```sql
-INSERT INTO categories (category_name) VALUES
-('Food'),
-('Transport'),
-('Hotel'),
-('Shopping'),
-('Activities');
-```
-
-#### Test User
-
-```sql
-INSERT INTO users (username, email, password, role)
-VALUES ('admin', 'admin@email.com', '1234', 'user');
-```
-
----
-
 ## ▶️ Run the Application
 
 ```bash
@@ -240,63 +218,114 @@ http://127.0.0.1:5000
 
 ---
 
-## 🔐 Login
+## 🧪 How to Test the System (With Demo Data)
+
+### 🔹 Step 1: Reset Database
+
+Run the reset script:
+
+```bash
+sudo mysql < reset_db.sql
+```
+
+✔ Clears all data
+✔ Resets IDs
+✔ Recreates categories
+✔ Inserts admin user
+
+---
+
+### 🔹 Step 2: Populate Demo Data
+
+Run the demo data script:
+
+```bash
+sudo mysql < populate_demo.sql
+```
+
+✔ Adds multiple users
+✔ Creates trips per user
+✔ Inserts expenses
+✔ Updates budgets automatically
+
+---
+
+### 🔹 Step 3: Run the App
+
+```bash
+python app.py
+```
+
+---
+
+### 🔹 Step 4: Login Accounts
 
 ```
-Username: admin  
-Password: 1234
+admin  / password
+user1  / 1234
+user2  / 1234
+user3  / 1234
 ```
 
 ---
 
-## 🧪 How to Test the System
+### 🔹 Step 5: Test Features
 
-### 1. Create Trip
+#### 1. Create Trip
 
-* Fill in trip details
-* Click **Create Trip**
+* Add a new trip
+* Verify it appears in Trips Overview
 
----
+#### 2. Add Expense
 
-### 2. Add Expense
+* Select trip + category
+* Add amount
+* ✔ Remaining budget decreases
 
-* Select Trip and Category
-* Enter amount, description, date
-* Click **Add Expense**
+#### 3. Update Expense
 
----
+* Modify amount
+* ✔ Budget adjusts correctly
 
-### 3. Update Expense
+#### 4. Delete Expense
 
-* Select expense from dropdown
-* Enter new amount
+* Remove expense
+* ✔ Budget is restored
 
----
+#### 5. Adjust Budget
 
-### 4. Delete Expense
-
-* Select expense from dropdown
-
----
-
-### 5. Adjust Budget
-
-* Select trip
-* Enter new budget
+* Change total budget
+* ✔ Remaining recalculates
 
 ---
 
-### 6. Reports
+### 🔹 Step 6: Reports
 
-* Enter month and year
-* View total expenses
+Test all reports:
+
+* Total Expense (enter month + year, e.g., 8 / 2026)
+* Budget vs Actual
+* Expense by Category
+* Remaining Budget
+* User Spending
+
+---
+
+### 🔹 Step 7: Multi-User Validation
+
+Login as different users:
+
+✔ Each user sees only their own trips
+✔ Each user sees only their own expenses
+✔ Reports differ per user
 
 ---
 
 ## ⚠️ Notes
 
-* Ensure MySQL service is running
+* Ensure MySQL is running
 * Check database credentials in `app.py` if connection fails
-* This is a school project (focus on functionality over UI)
+* Always run `reset_db.sql` then `populate_demo.sql` before demo
+* This project focuses on functionality (basic UI)
 
 ---
