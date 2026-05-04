@@ -9,13 +9,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "secret123"
+app.secret_key = os.environ.get("SECRET_KEY")
 
 conn = mysql.connector.connect(
-    host="localhost",
-    user="wanderuser",
-    password="password123",
-    database="wanderwallet_db"
+    host=os.environ.get("DB_HOST", "localhost"),
+    user=os.environ.get("DB_USER"),
+    password=os.environ.get("DB_PASSWORD"),
+    database=os.environ.get("DB_NAME")
 )
 
 # ---------------- LOGIN ----------------
