@@ -59,22 +59,11 @@
     <div class="col-md-6">
         <div class="card ww-card shadow-sm h-100">
             <div class="card-header">
-                <i class="bi bi-bar-chart-fill text-primary"></i>
+                <i class="bi bi-pie-chart-fill text-primary"></i>
                 <h6>Visual Overview</h6>
             </div>
-            <div class="card-body">
-                {% for row in data | sort(attribute='total', reverse=True) %}
-                {% set pct = ((row.total|float / grand_total) * 100)|round(1) if grand_total > 0 else 0 %}
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="small fw-medium">{{ row.category_name }}</span>
-                        <span class="small text-muted">₱{{ "{:,.2f}".format(row.total|float) }}</span>
-                    </div>
-                    <div class="progress" style="height:10px;border-radius:5px;">
-                        <div class="progress-bar bg-primary" style="width: {{ pct }}%;"></div>
-                    </div>
-                </div>
-                {% endfor %}
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="categoryPieChart" style="max-height:320px;"></canvas>
             </div>
         </div>
     </div>
@@ -90,4 +79,49 @@
 <div class="mt-3">
     <a href="/" class="ww-link"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% if data %}
+<script>
+(function () {
+    var labels = {{ data | sort(attribute='total', reverse=True) | map(attribute='category_name') | list | tojson }};
+    var values = {{ data | sort(attribute='total', reverse=True) | map(attribute='total') | map('float') | list | tojson }};
+    var palette = [
+        '#4361ee','#f72585','#4cc9f0','#7209b7','#3a0ca3',
+        '#560bad','#480ca8','#b5179e','#f3722c','#f8961e',
+        '#f9c74f','#90be6d','#43aa8b','#577590','#277da1'
+    ];
+    var colors = labels.map(function(_, i){ return palette[i % palette.length]; });
+
+    new Chart(document.getElementById('categoryPieChart'), {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            var total = ctx.dataset.data.reduce(function(a, b){ return a + b; }, 0);
+                            var pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                            return ' ₱' + ctx.parsed.toLocaleString('en-PH', {minimumFractionDigits: 2}) + '  (' + pct + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}
