@@ -43,6 +43,27 @@
     </div>
 </div>
 
+{# ---- AI Insights ---- #}
+<div class="card ww-card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <div class="ww-stat-icon purple" style="width:32px;height:32px;font-size:0.9rem;">
+                <i class="bi bi-stars"></i>
+            </div>
+            <h6 class="mb-0 fw-bold">AI Budget Insights</h6>
+        </div>
+        <button class="btn btn-ww btn-sm px-3" id="get-insights-btn" onclick="fetchInsights()">
+            <i class="bi bi-magic me-1"></i>Generate Insights
+        </button>
+    </div>
+    <div class="card-body" id="insights-body">
+        <p class="text-muted small mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Click <strong>Generate Insights</strong> to get an AI-powered analysis of your travel spending.
+        </p>
+    </div>
+</div>
+
 {# ---- Tabs ---- #}
 <ul class="nav ww-tabs mb-0" id="mainTabs" role="tablist">
     <li class="nav-item" role="presentation">
@@ -442,6 +463,7 @@
                         </div>
                         <h6 class="mb-0 fw-semibold">Monthly Expenses</h6>
                     </div>
+                    <p class="text-muted small">Check total expenses for a specific month.</p>
                     <form method="POST" action="/report">
                         <div class="row g-2 mb-2">
                             <div class="col-7">
@@ -584,5 +606,36 @@
         document.getElementById('modal-expense-desc').textContent =
             btn.dataset.expenseDesc ? '"' + btn.dataset.expenseDesc + '"' : 'No description';
     });
+
+    async function fetchInsights() {
+        const btn  = document.getElementById('get-insights-btn');
+        const body = document.getElementById('insights-body');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Analyzing…';
+        body.innerHTML = '<p class="text-muted small mb-0"><i class="bi bi-hourglass-split me-1"></i>Generating your personalized insights…</p>';
+
+        try {
+            const resp = await fetch('/ai-insights', { method: 'POST' });
+            const data = await resp.json();
+
+            if (data.insight) {
+                // Safely escape then apply basic markdown (bold + line breaks)
+                const escaped = data.insight
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const formatted = escaped
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+                body.innerHTML = `<div class="small lh-lg">${formatted}</div>`;
+            } else {
+                body.innerHTML = `<p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${data.error || 'Failed to generate insights.'}</p>`;
+            }
+        } catch (_) {
+            body.innerHTML = '<p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Something went wrong. Please try again.</p>';
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh Insights';
+    }
 </script>
 {% endblock %}
