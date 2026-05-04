@@ -43,6 +43,27 @@
     </div>
 </div>
 
+{# ---- AI Insights ---- #}
+<div class="card ww-card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <div class="ww-stat-icon purple" style="width:32px;height:32px;font-size:0.9rem;">
+                <i class="bi bi-stars"></i>
+            </div>
+            <h6 class="mb-0 fw-bold">AI Budget Insights</h6>
+        </div>
+        <button class="btn btn-ww btn-sm px-3" id="get-insights-btn" onclick="fetchInsights()">
+            <i class="bi bi-magic me-1"></i>Generate Insights
+        </button>
+    </div>
+    <div class="card-body" id="insights-body">
+        <p class="text-muted small mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Click <strong>Generate Insights</strong> to get an AI-powered analysis of your travel spending.
+        </p>
+    </div>
+</div>
+
 {# ---- Tabs ---- #}
 <ul class="nav ww-tabs mb-0" id="mainTabs" role="tablist">
     <li class="nav-item" role="presentation">
@@ -146,6 +167,7 @@
                         <th>Spent</th>
                         <th>Remaining</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -187,6 +209,26 @@
                             {% else %}
                                 <span class="badge bg-success-subtle text-success border border-success-subtle">Good</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-warning me-1"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editTripModal"
+                                    data-trip-id="{{ trip.trip_id }}"
+                                    data-trip-name="{{ trip.trip_name }}"
+                                    data-trip-destination="{{ trip.destination }}"
+                                    data-trip-start="{{ trip.start_date.strftime('%Y-%m-%d') if trip.start_date and trip.start_date is not string else trip.start_date or '' }}"
+                                    data-trip-end="{{ trip.end_date.strftime('%Y-%m-%d') if trip.end_date and trip.end_date is not string else trip.end_date or '' }}"
+                                    data-trip-budget="{{ total }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="POST" action="/delete-trip" class="d-inline"
+                                  onsubmit="return confirm('Delete this trip and all its expenses?');">
+                                <input type="hidden" name="trip_id" value="{{ trip.trip_id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -442,15 +484,29 @@
                         </div>
                         <h6 class="mb-0 fw-semibold">Monthly Expenses</h6>
                     </div>
-                    <form method="POST" action="/report">
+                    <p class="text-muted small">Check total expenses for a specific month.</p>
+                    <form method="POST" action="/report" class="mt-auto">
                         <div class="row g-2 mb-2">
-                            <div class="col-6">
-                                <input type="number" name="month" class="form-control form-control-sm"
-                                       placeholder="Month (1–12)" min="1" max="12" required>
+                            <div class="col-7">
+                                <select name="month" class="form-select form-select-sm" required>
+                                    <option value="" disabled selected>Month</option>
+                                    {% for m, mname in [
+                                        (1,'January'),(2,'February'),(3,'March'),
+                                        (4,'April'),(5,'May'),(6,'June'),
+                                        (7,'July'),(8,'August'),(9,'September'),
+                                        (10,'October'),(11,'November'),(12,'December')
+                                    ] %}
+                                    <option value="{{ m }}">{{ mname }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
-                            <div class="col-6">
-                                <input type="number" name="year" class="form-control form-control-sm"
-                                       placeholder="Year" min="2000" required>
+                            <div class="col-5">
+                                <select name="year" class="form-select form-select-sm" required>
+                                    <option value="" disabled selected>Year</option>
+                                    {% for y in range(2030, 2019, -1) %}
+                                    <option value="{{ y }}">{{ y }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-ww btn-sm w-100">View Total</button>
@@ -468,7 +524,7 @@
                         <h6 class="mb-0 fw-semibold">Budget vs Actual</h6>
                     </div>
                     <p class="text-muted small">Compare planned budget against actual spending per trip.</p>
-                    <form method="POST" action="/report-budget">
+                    <form method="POST" action="/report-budget" class="mt-auto">
                         <button type="submit" class="btn btn-ww btn-sm w-100">View Report</button>
                     </form>
                 </div>
@@ -484,7 +540,7 @@
                         <h6 class="mb-0 fw-semibold">Expense by Category</h6>
                     </div>
                     <p class="text-muted small">See how spending breaks down across different categories.</p>
-                    <form method="POST" action="/report-category">
+                    <form method="POST" action="/report-category" class="mt-auto">
                         <button type="submit" class="btn btn-ww btn-sm w-100">View Report</button>
                     </form>
                 </div>
@@ -500,7 +556,7 @@
                         <h6 class="mb-0 fw-semibold">Remaining Budget</h6>
                     </div>
                     <p class="text-muted small">Check how much budget is left for each trip.</p>
-                    <form method="POST" action="/report-remaining">
+                    <form method="POST" action="/report-remaining" class="mt-auto">
                         <button type="submit" class="btn btn-ww btn-sm w-100">View Report</button>
                     </form>
                 </div>
@@ -516,7 +572,7 @@
                         <h6 class="mb-0 fw-semibold">User Spending</h6>
                     </div>
                     <p class="text-muted small">Your total spending across all trips combined.</p>
-                    <form method="POST" action="/report-user">
+                    <form method="POST" action="/report-user" class="mt-auto">
                         <button type="submit" class="btn btn-ww btn-sm w-100">View Report</button>
                     </form>
                 </div>
@@ -526,6 +582,63 @@
     </div>
 
 </div>{# end tab-content #}
+
+{# ======== Edit Trip Modal ======== #}
+<div class="modal fade" id="editTripModal" tabindex="-1" aria-labelledby="editTripModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content ww-card">
+            <div class="modal-header border-bottom" style="border-color: var(--ww-border) !important;">
+                <h6 class="modal-title fw-bold" id="editTripModalLabel">
+                    <i class="bi bi-pencil-fill text-warning me-2"></i>Edit Trip
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/edit-trip">
+                <div class="modal-body">
+                    <input type="hidden" name="trip_id" id="edit-trip-id">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Trip Name</label>
+                            <input type="text" name="trip_name" id="edit-trip-name"
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Destination</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                <input type="text" name="destination" id="edit-trip-destination"
+                                       class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" name="start_date" id="edit-trip-start"
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date</label>
+                            <input type="date" name="end_date" id="edit-trip-end"
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Total Budget (₱)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₱</span>
+                                <input type="number" name="budget" id="edit-trip-budget"
+                                       class="form-control" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top" style="border-color: var(--ww-border) !important;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-warning px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {# ======== Update Expense Modal ======== #}
 <div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
@@ -564,6 +677,16 @@
 
 {% block scripts %}
 <script>
+    document.getElementById('editTripModal').addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('edit-trip-id').value          = btn.dataset.tripId;
+        document.getElementById('edit-trip-name').value        = btn.dataset.tripName;
+        document.getElementById('edit-trip-destination').value = btn.dataset.tripDestination;
+        document.getElementById('edit-trip-start').value       = btn.dataset.tripStart;
+        document.getElementById('edit-trip-end').value         = btn.dataset.tripEnd;
+        document.getElementById('edit-trip-budget').value      = btn.dataset.tripBudget;
+    });
+
     document.getElementById('updateModal').addEventListener('show.bs.modal', function (e) {
         const btn = e.relatedTarget;
         document.getElementById('update-expense-id').value  = btn.dataset.expenseId;
@@ -571,5 +694,36 @@
         document.getElementById('modal-expense-desc').textContent =
             btn.dataset.expenseDesc ? '"' + btn.dataset.expenseDesc + '"' : 'No description';
     });
+
+    async function fetchInsights() {
+        const btn  = document.getElementById('get-insights-btn');
+        const body = document.getElementById('insights-body');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Analyzing…';
+        body.innerHTML = '<p class="text-muted small mb-0"><i class="bi bi-hourglass-split me-1"></i>Generating your personalized insights…</p>';
+
+        try {
+            const resp = await fetch('/ai-insights', { method: 'POST' });
+            const data = await resp.json();
+
+            if (data.insight) {
+                // Safely escape then apply basic markdown (bold + line breaks)
+                const escaped = data.insight
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const formatted = escaped
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+                body.innerHTML = `<div class="small lh-lg">${formatted}</div>`;
+            } else {
+                body.innerHTML = `<p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${data.error || 'Failed to generate insights.'}</p>`;
+            }
+        } catch (_) {
+            body.innerHTML = '<p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Something went wrong. Please try again.</p>';
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh Insights';
+    }
 </script>
 {% endblock %}

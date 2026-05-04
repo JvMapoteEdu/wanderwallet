@@ -1,15 +1,21 @@
-from flask import Flask, request, redirect, url_for, flash, session, render_template
+from flask import Flask, request, redirect, url_for, flash, session, render_template, jsonify
 import mysql.connector
 from calendar import month_name as _month_name
+import requests as http_requests
+import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "secret123"
+app.secret_key = os.environ.get("SECRET_KEY")
 
 conn = mysql.connector.connect(
-    host="localhost",
-    user="wanderuser",
-    password="password123",
-    database="wanderwallet_db"
+    host=os.environ.get("DB_HOST", "localhost"),
+    user=os.environ.get("DB_USER"),
+    password=os.environ.get("DB_PASSWORD"),
+    database=os.environ.get("DB_NAME")
 )
 
 # ---------------- LOGIN ----------------
@@ -287,6 +293,76 @@ def adjust_budget():
     flash("Budget updated successfully!", "success")
     return redirect(url_for('home'))
 
+# ---------------- EDIT TRIP ----------------
+@app.route('/edit-trip', methods=['POST'])
+def edit_trip():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    trip_id     = request.form['trip_id']
+    trip_name   = request.form['trip_name']
+    destination = request.form['destination']
+    start_date  = request.form['start_date']
+    end_date    = request.form['end_date']
+    new_budget  = float(request.form['budget'])
+
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM budgets WHERE trip_id = %s", (trip_id,))
+    budget = cursor.fetchone()
+
+    cursor.execute("""
+    UPDATE trips
+    SET trip_name = %s, destination = %s, start_date = %s, end_date = %s
+    WHERE trip_id = %s AND user_id = %s
+    """, (trip_name, destination, start_date, end_date, trip_id, session['user_id']))
+
+    if budget:
+        spent         = float(budget['total_budget']) - float(budget['remaining_budget'])
+        new_remaining = new_budget - spent
+        cursor.execute("""
+        UPDATE budgets
+        SET total_budget = %s, remaining_budget = %s
+        WHERE trip_id = %s
+        """, (new_budget, new_remaining, trip_id))
+    else:
+        cursor.execute("""
+        INSERT INTO budgets (trip_id, total_budget, remaining_budget)
+        VALUES (%s, %s, %s)
+        """, (trip_id, new_budget, new_budget))
+
+    conn.commit()
+
+    flash("Trip updated successfully!", "success")
+    return redirect(url_for('home'))
+
+# ---------------- DELETE TRIP ----------------
+@app.route('/delete-trip', methods=['POST'])
+def delete_trip():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    trip_id = request.form['trip_id']
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    DELETE FROM expenses WHERE trip_id = %s
+    """, (trip_id,))
+
+    cursor.execute("""
+    DELETE FROM budgets WHERE trip_id = %s
+    """, (trip_id,))
+
+    cursor.execute("""
+    DELETE FROM trips WHERE trip_id = %s AND user_id = %s
+    """, (trip_id, session['user_id']))
+
+    conn.commit()
+
+    flash("Trip deleted successfully.", "success")
+    return redirect(url_for('home'))
+
 # ---------------- REPORT: MONTHLY TOTAL ----------------
 @app.route('/report', methods=['POST'])
 def report():
@@ -402,6 +478,99 @@ def report_user():
     uname = row['username'] if row else session['username']
 
     return render_template('report_user.html', total=total, username=uname)
+
+# ---------------- AI INSIGHTS ----------------
+@app.route('/ai-insights', methods=['POST'])
+def ai_insights():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+    SELECT t.trip_name, t.destination,
+           b.total_budget, b.remaining_budget
+    FROM trips t
+    LEFT JOIN budgets b ON t.trip_id = b.trip_id
+    WHERE t.user_id = %s
+    """, (session['user_id'],))
+    trips = cursor.fetchall()
+
+    cursor.execute("""
+    SELECT c.category_name, SUM(e.amount) AS total
+    FROM expenses e
+    JOIN categories c ON e.category_id = c.category_id
+    JOIN trips t ON e.trip_id = t.trip_id
+    WHERE t.user_id = %s
+    GROUP BY c.category_name
+    ORDER BY total DESC
+    """, (session['user_id'],))
+    category_data = cursor.fetchall()
+
+    trips_lines = []
+    for t in trips:
+        total     = float(t['total_budget'])     if t['total_budget']     else 0
+        remaining = float(t['remaining_budget']) if t['remaining_budget'] else 0
+        spent     = total - remaining
+        pct       = round((spent / total) * 100) if total > 0 else 0
+        trips_lines.append(
+            f"- {t['trip_name']} ({t['destination']}): "
+            f"Budget ₱{total:,.2f}, Spent ₱{spent:,.2f}, "
+            f"Remaining ₱{remaining:,.2f} ({pct}% used)"
+        )
+
+    category_lines = [
+        f"- {c['category_name']}: ₱{float(c['total']):,.2f}"
+        for c in category_data
+    ]
+
+    user_context = (
+        f"Username: {session['username']}\n\n"
+        f"Trips:\n" + ("\n".join(trips_lines) if trips_lines else "No trips yet") + "\n\n"
+        f"Spending by Category:\n" + ("\n".join(category_lines) if category_lines else "No expenses yet")
+    )
+
+    api_key = os.environ.get("OPENROUTER_API_KEY", "")
+    try:
+        resp = http_requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            data=json.dumps({
+                "model": "openai/gpt-5.2",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are WanderWallet AI, a friendly travel budget analyst. "
+                            "Given the user's trip and expense data, provide 3–5 concise, "
+                            "actionable insights about their spending habits and budget health. "
+                            "Be encouraging, specific, and practical. "
+                            "Use short bullet points starting with an emoji. "
+                            "End your response after the last insight. "
+                            "Do NOT ask follow-up questions, request more information, "
+                            "or prompt the user for any input whatsoever."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Here is my travel budget data:\n\n{user_context}\n\n"
+                            "Please analyze my spending and give me smart tips to travel better "
+                            "and stay within budget."
+                        )
+                    }
+                ],
+                "max_tokens": 2000
+            }),
+            timeout=30
+        )
+        result = resp.json()
+        if 'choices' in result and result['choices']:
+            return jsonify({'insight': result['choices'][0]['message']['content']})
+        return jsonify({'error': result.get('error', {}).get('message', 'No response from AI.')}), 502
+    except Exception as exc:
+        return jsonify({'error': str(exc)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
