@@ -163,7 +163,7 @@ CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100),
     email VARCHAR(100),
-    password VARCHAR(100),
+    password VARCHAR(255),
     role VARCHAR(50),
     created_date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
