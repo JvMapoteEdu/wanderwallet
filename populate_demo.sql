@@ -4,9 +4,9 @@ USE wanderwallet_db;
 -- ADD USERS (admin already exists)
 -- ================================
 INSERT INTO users (username, email, password, role) VALUES
-('user1', 'user1@email.com', '1234', 'user'),
-('user2', 'user2@email.com', '1234', 'user'),
-('user3', 'user3@email.com', '1234', 'user');
+('user1', 'user1@email.com', 'scrypt:32768:8:1$SifkgrjLSWZKzz5m$ce03da354c73fe2ef7105b858107ad704a2b26776fae5a7f60b649f73ebc96edfcf10bb9d3f2ed155666d548398ff2aa93f615bfcd24e53650190ace8ccc39db', 'user'),
+('user2', 'user2@email.com', 'scrypt:32768:8:1$SifkgrjLSWZKzz5m$ce03da354c73fe2ef7105b858107ad704a2b26776fae5a7f60b649f73ebc96edfcf10bb9d3f2ed155666d548398ff2aa93f615bfcd24e53650190ace8ccc39db', 'user'),
+('user3', 'user3@email.com', 'scrypt:32768:8:1$SifkgrjLSWZKzz5m$ce03da354c73fe2ef7105b858107ad704a2b26776fae5a7f60b649f73ebc96edfcf10bb9d3f2ed155666d548398ff2aa93f615bfcd24e53650190ace8ccc39db', 'user');
 
 -- ================================
 -- TRIPS PER USER
@@ -32,15 +32,15 @@ INSERT INTO trips (user_id, trip_name, destination, start_date, end_date) VALUES
 -- ================================
 -- BUDGETS
 -- ================================
-INSERT INTO budgets (trip_id, total_budget, remaining_budget) VALUES
-(1, 50000, 50000),
-(2, 30000, 30000),
-(3, 40000, 40000),
-(4, 35000, 35000),
-(5, 25000, 25000),
-(6, 30000, 30000),
-(7, 28000, 28000),
-(8, 20000, 20000);
+INSERT INTO budgets (trip_id, total_budget) VALUES
+(1, 50000),
+(2, 30000),
+(3, 40000),
+(4, 35000),
+(5, 25000),
+(6, 30000),
+(7, 28000),
+(8, 20000);
 
 -- ================================
 -- EXPENSES
@@ -189,12 +189,3 @@ INSERT INTO expenses (trip_id, category_id, amount, description, expense_date) V
 (8, 5,  300, 'Camp John Hay Walk',       '2026-12-23'),
 (8, 1,  500, 'Strawberry Pandesal Breakfast','2026-12-23');
 
--- ================================
--- UPDATE REMAINING BUDGET
--- ================================
-UPDATE budgets b
-SET remaining_budget = total_budget - (
-    SELECT IFNULL(SUM(e.amount), 0)
-    FROM expenses e
-    WHERE e.trip_id = b.trip_id
-);

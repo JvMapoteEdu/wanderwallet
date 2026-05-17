@@ -1,6 +1,7 @@
 from flask import Flask, request, redirect, url_for, flash, session, render_template, jsonify
 import mysql.connector
 from calendar import month_name as _month_name
+from werkzeug.security import generate_password_hash, check_password_hash
 import requests as http_requests
 import json
 import os
@@ -26,14 +27,11 @@ def login():
         password = request.form['password']
 
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("""
-        SELECT * FROM users
-        WHERE username = %s AND password = %s
-        """, (username, password))
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
 
         user = cursor.fetchone()
 
-        if user:
+        if user and check_password_hash(user['password'], password):
             session['user_id'] = user['user_id']
             session['username'] = user['username']
             flash("Login successful!", "success")
@@ -63,7 +61,7 @@ def register():
         cursor.execute("""
         INSERT INTO users (username, email, password, role)
         VALUES (%s, %s, %s, %s)
-        """, (username, email, password, 'user'))
+        """, (username, email, generate_password_hash(password), 'user'))
 
         conn.commit()
 
@@ -89,7 +87,10 @@ def home():
     cursor.execute("""
     SELECT t.trip_id, t.trip_name, t.destination,
            t.start_date, t.end_date,
-           b.total_budget, b.remaining_budget
+           b.total_budget,
+           (b.total_budget - COALESCE(
+               (SELECT SUM(amount) FROM expenses WHERE trip_id = b.trip_id), 0
+           )) AS remaining_budget
     FROM trips t
     LEFT JOIN budgets b ON t.trip_id = b.trip_id
     WHERE t.user_id = %s
@@ -149,9 +150,9 @@ def add_trip():
     trip_id = cursor.lastrowid
 
     cursor.execute("""
-    INSERT INTO budgets (trip_id, total_budget, remaining_budget)
-    VALUES (%s, %s, %s)
-    """, (trip_id, budget, budget))
+    INSERT INTO budgets (trip_id, total_budget)
+    VALUES (%s, %s)
+    """, (trip_id, budget))
 
     conn.commit()
 
@@ -177,12 +178,6 @@ def add_expense():
     VALUES (%s, %s, %s, %s, %s)
     """, (trip_id, category_id, amount, description, expense_date))
 
-    cursor.execute("""
-    UPDATE budgets
-    SET remaining_budget = remaining_budget - %s
-    WHERE trip_id = %s
-    """, (amount, trip_id))
-
     conn.commit()
 
     flash("Expense added successfully!", "success")
@@ -204,15 +199,6 @@ def delete_expense():
     if not expense:
         flash("Expense not found.", "warning")
         return redirect(url_for('home'))
-
-    trip_id = expense['trip_id']
-    amount  = expense['amount']
-
-    cursor.execute("""
-    UPDATE budgets
-    SET remaining_budget = remaining_budget + %s
-    WHERE trip_id = %s
-    """, (amount, trip_id))
 
     cursor.execute("DELETE FROM expenses WHERE expense_id = %s", (expense_id,))
 
@@ -239,22 +225,11 @@ def update_expense():
         flash("Expense not found.", "warning")
         return redirect(url_for('home'))
 
-    old_amount = float(expense['amount'])
-    trip_id    = expense['trip_id']
-
     cursor.execute("""
     UPDATE expenses
     SET amount = %s
     WHERE expense_id = %s
     """, (new_amount, expense_id))
-
-    difference = new_amount - old_amount
-
-    cursor.execute("""
-    UPDATE budgets
-    SET remaining_budget = remaining_budget - %s
-    WHERE trip_id = %s
-    """, (difference, trip_id))
 
     conn.commit()
 
@@ -279,14 +254,11 @@ def adjust_budget():
         flash("Budget not found.", "warning")
         return redirect(url_for('home'))
 
-    spent         = float(budget['total_budget']) - float(budget['remaining_budget'])
-    new_remaining = new_budget - spent
-
     cursor.execute("""
     UPDATE budgets
-    SET total_budget = %s, remaining_budget = %s
+    SET total_budget = %s
     WHERE trip_id = %s
-    """, (new_budget, new_remaining, trip_id))
+    """, (new_budget, trip_id))
 
     conn.commit()
 
@@ -318,18 +290,16 @@ def edit_trip():
     """, (trip_name, destination, start_date, end_date, trip_id, session['user_id']))
 
     if budget:
-        spent         = float(budget['total_budget']) - float(budget['remaining_budget'])
-        new_remaining = new_budget - spent
         cursor.execute("""
         UPDATE budgets
-        SET total_budget = %s, remaining_budget = %s
+        SET total_budget = %s
         WHERE trip_id = %s
-        """, (new_budget, new_remaining, trip_id))
+        """, (new_budget, trip_id))
     else:
         cursor.execute("""
-        INSERT INTO budgets (trip_id, total_budget, remaining_budget)
-        VALUES (%s, %s, %s)
-        """, (trip_id, new_budget, new_budget))
+        INSERT INTO budgets (trip_id, total_budget)
+        VALUES (%s, %s)
+        """, (trip_id, new_budget))
 
     conn.commit()
 
@@ -403,11 +373,13 @@ def report_budget():
     cursor.execute("""
     SELECT t.trip_name,
            b.total_budget,
-           (b.total_budget - b.remaining_budget) AS spent,
-           b.remaining_budget
+           COALESCE(SUM(e.amount), 0) AS spent,
+           b.total_budget - COALESCE(SUM(e.amount), 0) AS remaining_budget
     FROM budgets b
     JOIN trips t ON b.trip_id = t.trip_id
+    LEFT JOIN expenses e ON e.trip_id = b.trip_id
     WHERE t.user_id = %s
+    GROUP BY b.budget_id, t.trip_name, b.total_budget
     """, (session['user_id'],))
 
     data = cursor.fetchall()
@@ -445,11 +417,15 @@ def report_remaining():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-    SELECT t.trip_name, b.remaining_budget, b.total_budget
+    SELECT t.trip_name,
+           b.total_budget,
+           (b.total_budget - COALESCE(
+               (SELECT SUM(amount) FROM expenses WHERE trip_id = b.trip_id), 0
+           )) AS remaining_budget
     FROM budgets b
     JOIN trips t ON b.trip_id = t.trip_id
     WHERE t.user_id = %s
-    ORDER BY b.remaining_budget ASC
+    ORDER BY remaining_budget ASC
     """, (session['user_id'],))
 
     data = cursor.fetchall()
@@ -489,7 +465,10 @@ def ai_insights():
 
     cursor.execute("""
     SELECT t.trip_name, t.destination,
-           b.total_budget, b.remaining_budget
+           b.total_budget,
+           (b.total_budget - COALESCE(
+               (SELECT SUM(amount) FROM expenses WHERE trip_id = b.trip_id), 0
+           )) AS remaining_budget
     FROM trips t
     LEFT JOIN budgets b ON t.trip_id = b.trip_id
     WHERE t.user_id = %s
